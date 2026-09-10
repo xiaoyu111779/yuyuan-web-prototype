@@ -13,6 +13,7 @@
     <p id="hint">线下模式不添加原型提示词，直接走酒馆正常生成。</p>
     <p class="warning">试用会写入当前酒馆存档，请先复制一份测试存档。两种模式共用记录，不做后台记忆复制。</p>
     <label class="consent"><input type="checkbox" id="consent">我已确认当前是测试存档，允许写入聊天</label>
+    <details id="probe-panel"><summary>静默生成验证 · 不保存聊天</summary><p>沿用酒馆预设组装，仍读取当前线下历史。消耗模型额度；结果仅留在此页，刷新即丢失，不代表已完成独立记忆。</p><button id="probe" type="button" disabled>用输入框内容验证（不发送到聊天）</button><p id="probe-check" role="status"></p><pre id="probe-result"></pre></details>
     <section id="messages" aria-label="聊天记录"></section>
     <p id="status" role="status">需要从酒馆里的“芋圆网页 · 试用”按钮打开，不能双击此文件。</p>
     <form id="composer"><textarea id="text" aria-label="消息" rows="2" maxlength="20000" placeholder="写下一句话…"></textarea><button id="send" disabled>发送</button><button id="stop" type="button" disabled>停止</button></form>
