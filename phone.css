@@ -23,6 +23,10 @@ body.online article { max-width: 88%; }
 body.online article.user { margin-left: auto; }
 article.system { opacity: .7; border: 1px dashed #bcb0c2; }
 #status { min-height: 20px; color: #755882; }
+#probe-panel { flex-shrink: 0; border: 1px solid #d8cbdc; border-radius: 12px; padding: 8px; margin: 4px 0; max-height: 42vh; overflow: auto; }
+#probe-panel summary { cursor: pointer; min-height: 32px; font-size: 14px; }
+#probe-panel button { font-size: 13px; width: 100%; white-space: normal; }
+#probe-result { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 14px; }
 form { display: flex; gap: 6px; align-items: flex-end; }
 textarea { min-width: 0; flex: 1; resize: none; border: 1px solid #d8cbdc; border-radius: 14px; padding: 10px; font: inherit; background: white; color: inherit; max-height: 25vh; }
 @media (max-height: 500px) { .warning, #hint { display: none; } header small { display: none; } nav { margin-top: 4px; } }
