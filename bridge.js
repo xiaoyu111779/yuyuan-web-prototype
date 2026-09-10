@@ -33,9 +33,37 @@ export function createBridge({ getContext, isGenerating, getInput, notify }) {
         if (state.busy) throw new Error('酒馆正在生成，请稍后再发。');
         if (!state.supported) throw new Error('请先在酒馆打开单角色存档，选择聊天补全接口并连接模型。');
         if (request.binding !== state.binding || request.revision !== state.revision) throw new Error('存档或消息已变化，已刷新，请确认后重新发送。');
-        if (!['online', 'offline'].includes(request.mode)) throw new Error('无效聊天模式。');
+        if (!['online', 'offline', 'probe'].includes(request.mode)) throw new Error('无效聊天模式。');
         if (typeof request.text !== 'string' || !request.text.trim() || request.text.length > 20000) throw new Error('请输入 1–20000 字的消息。');
         if (request.text.trimStart().startsWith('/')) throw new Error('原型不执行斜杠命令，请回酒馆使用。');
+        if (request.mode === 'probe') {
+            seen.add(request.id);
+            if (seen.size > 200) seen.delete(seen.values().next().value);
+            busy = true;
+            const context = getContext();
+            const input = getInput();
+            const draft = input?.value;
+            const before = JSON.stringify(context.chat.map(message => [message.name, message.mes, message.is_user, message.is_system, message.swipe_id]));
+            const count = context.chat.length;
+            try {
+                notify();
+                const reply = await context.generate('quiet', {
+                    quiet_prompt: '请沿用当前角色设定、世界书和对话背景，回复下面这条手机消息。以角色会发来的自然短消息回复，不写线下动作旁白，不替用户说话。\n\n用户本次消息：\n' + request.text.trim(),
+                    quietToLoud: false,
+                    skipWIAN: false,
+                });
+                const fresh = getContext();
+                const after = JSON.stringify(fresh.chat.map(message => [message.name, message.mes, message.is_user, message.is_system, message.swipe_id]));
+                if (snapshot().binding !== state.binding) throw new Error('静默验证期间切换了存档，结果不展示到新存档，请回酒馆核对。');
+                const unchanged = before === after;
+                const draftUnchanged = getInput() === input && input?.value === draft;
+                if (typeof reply !== 'string' && !(reply instanceof String)) throw new Error('静默接口没有返回文本，请回酒馆检查连接和报错。');
+                return { accepted: false, probe: { reply: String(reply), unchanged, draftUnchanged, beforeCount: count, afterCount: fresh.chat.length } };
+            } finally {
+                busy = false;
+                notify();
+            }
+        }
         const input = getInput();
         if (!input || input.value.trim()) throw new Error('酒馆输入框还有草稿，请先保存或清空，原型不会覆盖它。');
         if (input.disabled) throw new Error('酒馆输入框当前不可用。');
