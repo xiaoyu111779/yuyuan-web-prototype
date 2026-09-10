@@ -1,3 +1,5 @@
+import { onlineKey, readOnline, onlinePrompt } from './online.js';
+
 export function randomId() {
     return Array.from(crypto.getRandomValues(new Uint8Array(16)), value => value.toString(16).padStart(2, '0')).join('');
 }
@@ -7,17 +9,20 @@ export function createBridge({ getContext, isGenerating, getInput, notify }) {
     let revision = 0;
     let signature = '';
     const seen = new Set();
-    const promptKey = `yuyuan-web-${randomId()}`;
+    let stopped = false;
 
     function snapshot() {
         const context = getContext();
+        let onlineMessages = [], onlineError = '';
+        try { onlineMessages = readOnline(context); } catch (error) { onlineError = error.message; }
         const binding = JSON.stringify([context.characterId, context.characters?.[context.characterId]?.avatar, context.chatId, context.groupId]);
-        const current = JSON.stringify([binding, context.chat.map(message => [message.mes, message.is_user, message.is_system, message.swipe_id])]);
+        const current = JSON.stringify([binding, context.chat.map(message => [message.mes, message.is_user, message.is_system, message.swipe_id]), onlineMessages]);
         if (signature !== current) { signature = current; revision++; }
         return {
             binding, revision, busy: busy || isGenerating(),
             name: context.name2 || '未选择角色', chatId: context.chatId || '',
             api: context.mainApi,
+            onlineMessages: onlineMessages.slice(-100), onlineError,
             preset: context.chatCompletionSettings?.preset_settings_openai || '请在酒馆确认当前预设',
             supported: context.characterId != null && !context.groupId && !!context.chatId && context.mainApi === 'openai' && context.onlineStatus !== 'no_connection',
             messages: context.chat.slice(-100).map(message => ({
@@ -36,6 +41,36 @@ export function createBridge({ getContext, isGenerating, getInput, notify }) {
         if (!['online', 'offline', 'probe'].includes(request.mode)) throw new Error('无效聊天模式。');
         if (typeof request.text !== 'string' || !request.text.trim() || request.text.length > 20000) throw new Error('请输入 1–20000 字的消息。');
         if (request.text.trimStart().startsWith('/')) throw new Error('原型不执行斜杠命令，请回酒馆使用。');
+        if (request.mode === 'online') {
+            const context = getContext();
+            const records = readOnline(context);
+            const serialized = JSON.stringify(records);
+            if (serialized.length + request.text.length > 450000) throw new Error('此存档线上记录接近容量限制，请先导出备份并换测试存档；旧记录未被删除。');
+            seen.add(request.id);
+            if (seen.size > 200) seen.delete(seen.values().next().value);
+            busy = true; stopped = false;
+            const input = getInput(), draft = input?.value;
+            const before = JSON.stringify(context.chat.map(message => [message.name, message.mes, message.is_user, message.is_system, message.swipe_id]));
+            try {
+                notify();
+                const reply = await context.generate('quiet', { quiet_prompt: onlinePrompt(records, request.text.trim()), quietToLoud: false, skipWIAN: false });
+                if (stopped) throw new Error('已停止，未保存这一轮线上消息；输入已保留。');
+                const fresh = getContext();
+                if (snapshot().binding !== state.binding) throw new Error('生成期间切换了存档，本轮未保存，避免串档。');
+                const after = JSON.stringify(fresh.chat.map(message => [message.name, message.mes, message.is_user, message.is_system, message.swipe_id]));
+                if (before !== after || getInput() !== input || input?.value !== draft) throw new Error('检测到线下聊天或草稿变化，本轮未保存，请回酒馆核对；原型没有回滚或删除记录。');
+                if ((typeof reply !== 'string' && !(reply instanceof String)) || !String(reply).trim()) throw new Error('模型未返回有效文本，本轮未保存，输入已保留。');
+                if (JSON.stringify(readOnline(fresh)) !== serialized) throw new Error('线上记录已被其他操作修改，本轮未保存，请刷新核对。');
+                const next = records.concat([
+                    { id: request.id + '-user', name: context.name1 || '我', user: true, text: request.text.trim(), at: Date.now() },
+                    { id: request.id + '-reply', name: context.name2 || '角色', user: false, text: String(reply), at: Date.now() },
+                ]);
+                const encoded = JSON.stringify(next);
+                if (encoded.length > 500000) throw new Error('本轮超过线上记录容量，未保存，请减少单次输出长度。');
+                fresh.accountStorage.setItem(onlineKey(fresh), encoded);
+                return { accepted: true, online: true };
+            } finally { busy = false; notify(); }
+        }
         if (request.mode === 'probe') {
             seen.add(request.id);
             if (seen.size > 200) seen.delete(seen.values().next().value);
@@ -71,11 +106,9 @@ export function createBridge({ getContext, isGenerating, getInput, notify }) {
         if (seen.size > 200) seen.delete(seen.values().next().value);
         busy = true;
         const context = getContext();
-        const submitted = request.mode === 'online' ? `【线上·手机消息】\n${request.text.trim()}` : request.text.trim();
+        const submitted = request.text.trim();
         let inputAccepted = false;
         try {
-            if (request.mode === 'online') context.setExtensionPrompt(promptKey,
-                '本次通过手机远程聊天，不是线下见面。保持当前角色卡、世界书、关系与既有记忆。只回复角色会发来的短消息，自然口语，不写现场动作旁白，不替对方说话；用换行分隔消息。不要求 JSON，不改变人物性格。', 1, 0, false, 0);
             input.value = submitted;
             input.dispatchEvent(new Event('input', { bubbles: true }));
             notify();
@@ -91,7 +124,6 @@ export function createBridge({ getContext, isGenerating, getInput, notify }) {
             failure.accepted = inputAccepted;
             throw failure;
         } finally {
-            if (request.mode === 'online') context.setExtensionPrompt(promptKey, '', 1, 0, false, 0);
             if (input.value === submitted) { input.value = ''; input.dispatchEvent(new Event('input', { bubbles: true })); }
             busy = false;
             notify();
@@ -99,8 +131,13 @@ export function createBridge({ getContext, isGenerating, getInput, notify }) {
     }
 
     function stop() {
-        if (busy) getContext().stopGeneration();
+        if (busy) { stopped = true; getContext().stopGeneration(); }
     }
 
-    return { snapshot, send, stop, isBusy: () => busy };
+    function exportOnline(binding) {
+        if (snapshot().binding !== binding) throw new Error('存档已变化，请刷新后再导出。');
+        return JSON.stringify({ version: 1, chat: getContext().chatId, records: readOnline(getContext()) }, null, 2);
+    }
+
+    return { snapshot, send, stop, exportOnline, isBusy: () => busy };
 }
