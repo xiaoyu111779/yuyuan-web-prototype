@@ -1,0 +1,28 @@
+:root { color-scheme: light; font: 16px/1.55 system-ui, sans-serif; color: #463b49; background: #f6f2f7; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { height: 100vh; height: 100dvh; max-width: 880px; margin: auto; display: flex; flex-direction: column; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+header { display: flex; align-items: center; gap: 10px; }
+header div { flex: 1; min-width: 0; }
+small { display: block; font-size: 11px; overflow-wrap: anywhere; color: #796d7d; }
+button { min-height: 44px; border: 1px solid #dbcfdf; border-radius: 14px; background: #fff; color: inherit; padding: 8px 12px; font: inherit; cursor: pointer; flex-shrink: 0; }
+button:disabled { opacity: .45; cursor: default; }
+nav { display: flex; gap: 8px; margin-top: 12px; }
+nav button { flex: 1; }
+nav button[aria-pressed=true] { background: #685371; color: white; border-color: #685371; }
+p { margin: 7px 0; font-size: 12px; }
+.warning { color: #81602e; }
+.consent { font-size: 12px; display: flex; align-items: center; min-height: 36px; gap: 8px; }
+input[type=checkbox] { width: 20px; height: 20px; }
+#messages { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 8px 2px; }
+article { margin: 12px 0; padding: 14px; border-radius: 14px; background: white; overflow-wrap: anywhere; }
+article p { font-size: 16px; white-space: pre-wrap; }
+article small { margin-bottom: 5px; }
+article.user { background: #e8e0ec; }
+body.online article { max-width: 88%; }
+body.online article.user { margin-left: auto; }
+article.system { opacity: .7; border: 1px dashed #bcb0c2; }
+#status { min-height: 20px; color: #755882; }
+form { display: flex; gap: 6px; align-items: flex-end; }
+textarea { min-width: 0; flex: 1; resize: none; border: 1px solid #d8cbdc; border-radius: 14px; padding: 10px; font: inherit; background: white; color: inherit; max-height: 25vh; }
+@media (max-height: 500px) { .warning, #hint { display: none; } header small { display: none; } nav { margin-top: 4px; } }

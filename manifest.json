@@ -1,0 +1,10 @@
+{
+  "display_name": "芋圆网页原型 · 酒馆内核验证",
+  "loading_order": 110,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "author": "小芋",
+  "version": "0.1.0",
+  "auto_update": false
+}

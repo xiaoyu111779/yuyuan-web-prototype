@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>芋圆 · 线上与线下</title>
+  <link rel="stylesheet" href="phone.css">
+</head>
+<body>
+  <main>
+    <header><button id="back">返回酒馆</button><div><strong id="name">芋圆 · 连接中</strong><small id="preset">沿用酒馆当前角色与预设</small></div><button id="refresh" aria-label="刷新记录">刷新</button></header>
+    <nav aria-label="聊天模式"><button id="offline" aria-pressed="true">线下 · 剧情</button><button id="online" aria-pressed="false">线上 · 手机</button></nav>
+    <p id="hint">线下模式不添加原型提示词，直接走酒馆正常生成。</p>
+    <p class="warning">试用会写入当前酒馆存档，请先复制一份测试存档。两种模式共用记录，不做后台记忆复制。</p>
+    <label class="consent"><input type="checkbox" id="consent">我已确认当前是测试存档，允许写入聊天</label>
+    <section id="messages" aria-label="聊天记录"></section>
+    <p id="status" role="status">需要从酒馆里的“芋圆网页 · 试用”按钮打开，不能双击此文件。</p>
+    <form id="composer"><textarea id="text" aria-label="消息" rows="2" maxlength="20000" placeholder="写下一句话…"></textarea><button id="send" disabled>发送</button><button id="stop" type="button" disabled>停止</button></form>
+  </main>
+  <script type="module" src="phone.js"></script>
+</body>
+</html>
