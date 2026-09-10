@@ -11,9 +11,9 @@
     <header><button id="back">返回酒馆</button><div><strong id="name">芋圆 · 连接中</strong><small id="preset">沿用酒馆当前角色与预设</small></div><button id="refresh" aria-label="刷新记录">刷新</button></header>
     <nav aria-label="聊天模式"><button id="offline" aria-pressed="true">线下 · 剧情</button><button id="online" aria-pressed="false">线上 · 手机</button></nav>
     <p id="hint">线下模式不添加原型提示词，直接走酒馆正常生成。</p>
-    <p class="warning">试用会写入当前酒馆存档，请先复制一份测试存档。两种模式共用记录，不做后台记忆复制。</p>
-    <label class="consent"><input type="checkbox" id="consent">我已确认当前是测试存档，允许写入聊天</label>
-    <details id="probe-panel"><summary>静默生成验证 · 不保存聊天</summary><p>沿用酒馆预设组装，仍读取当前线下历史。消耗模型额度；结果仅留在此页，刷新即丢失，不代表已完成独立记忆。</p><button id="probe" type="button" disabled>用输入框内容验证（不发送到聊天）</button><p id="probe-check" role="status"></p><pre id="probe-result"></pre></details>
+    <p class="warning">0.1.3：线上独立保存，线下仍写酒馆。请先复制测试存档；模型调用消耗额度，暂不支持多标签页同时使用。</p>
+    <label class="consent"><input type="checkbox" id="consent">我已确认测试账号和存档，允许生成及按当前模式保存</label>
+    <details id="probe-panel"><summary>备份与静默诊断</summary><button id="export-online" type="button">导出当前存档的全部线上记录</button><p>下方诊断只返回临时结果，不保存。日常线上聊天请切换“线上·手机”，使用底部发送。</p><button id="probe" type="button" disabled>用输入框内容验证（不发送到聊天）</button><p id="probe-check" role="status"></p><pre id="probe-result"></pre></details>
     <section id="messages" aria-label="聊天记录"></section>
     <p id="status" role="status">需要从酒馆里的“芋圆网页 · 试用”按钮打开，不能双击此文件。</p>
     <form id="composer"><textarea id="text" aria-label="消息" rows="2" maxlength="20000" placeholder="写下一句话…"></textarea><button id="send" disabled>发送</button><button id="stop" type="button" disabled>停止</button></form>
