@@ -16,7 +16,7 @@ button.disabled = true;
 const panel = document.createElement('div');
 panel.id = 'yuyuan-web-prototype-settings';
 panel.className = 'extension_container';
-panel.innerHTML = '<div class="inline-drawer"><div class="inline-drawer-toggle inline-drawer-header"><b>芋圆网页原型 · 0.1.2</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content"><p data-status role="status">正在连接酒馆接口…</p><button type="button" class="menu_button" data-open disabled style="min-height:44px;width:100%">打开芋圆网页</button><p>先复制测试存档。普通发送仍共用酒馆聊天；0.1.2 新增独立的静默验证按钮，消耗模型额度。</p></div></div>';
+panel.innerHTML = '<div class="inline-drawer"><div class="inline-drawer-toggle inline-drawer-header"><b>芋圆网页原型 · 0.1.3</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content"><p data-status role="status">正在连接酒馆接口…</p><button type="button" class="menu_button" data-open disabled style="min-height:44px;width:100%">打开芋圆网页</button><p>先复制测试存档。线上独立保存，线下写酒馆；保留静默验证按钮，消耗模型额度。</p></div></div>';
 const panelStatus = panel.querySelector('[data-status]');
 const panelOpen = panel.querySelector('[data-open]');
 let frame = null;
@@ -57,6 +57,10 @@ window.addEventListener('message', async event => {
     const request = event.data;
     if (!frame || event.origin !== location.origin || event.source !== frame.contentWindow || request?.channel !== 'yuyuan-prototype' || request.session !== session) return;
     if (request.type === 'ready' || request.type === 'refresh') publish(true);
+    else if (request.type === 'export-online') {
+        try { post({ type: 'online-export', text: bridge.exportOnline(request.binding) }); }
+        catch (error) { post({ type: 'error', message: error.message }); }
+    }
     else if (request.type === 'close') {
         if (bridge.isBusy() || isGenerating()) { post({ type: 'error', message: '请先等生成结束，或点停止后再返回。' }); return; }
         clearInterval(timer);
