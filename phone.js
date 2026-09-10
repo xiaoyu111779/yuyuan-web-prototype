@@ -1,7 +1,7 @@
 import { randomId } from './bridge.js';
 
 const session = location.hash.slice(1);
-const elements = Object.fromEntries(['name', 'preset', 'hint', 'messages', 'status', 'text', 'send', 'stop', 'consent', 'online', 'offline'].map(id => [id, document.getElementById(id)]));
+const elements = Object.fromEntries(['name', 'preset', 'hint', 'messages', 'status', 'text', 'send', 'stop', 'consent', 'online', 'offline', 'probe', 'probe-check', 'probe-result'].map(id => [id, document.getElementById(id)]));
 let state = null;
 let mode = 'offline';
 let pending = null;
@@ -15,6 +15,7 @@ function post(type, data = {}) {
 function controls() {
     const busy = !!pending || state?.busy;
     elements.send.disabled = !state?.supported || busy || !elements.consent.checked;
+    elements.probe.disabled = elements.send.disabled;
     elements.stop.disabled = !busy;
     elements.text.disabled = !!pending;
     elements.online.disabled = busy;
@@ -31,15 +32,16 @@ elements.consent.onchange = controls;
 document.getElementById('back').onclick = () => post('close');
 document.getElementById('refresh').onclick = () => post('refresh');
 elements.stop.onclick = () => post('stop');
-document.getElementById('composer').onsubmit = event => {
-    event.preventDefault();
+function submit(requestMode) {
     if (elements.send.disabled || !elements.text.value.trim()) return;
     pending = randomId();
     notice = '';
-    post('send', { id: pending, text: elements.text.value, mode, binding: state.binding, revision: state.revision });
+    post('send', { id: pending, text: elements.text.value, mode: requestMode, binding: state.binding, revision: state.revision });
     elements.status.textContent = '已交给酒馆生成…';
     controls();
-};
+}
+document.getElementById('composer').onsubmit = event => { event.preventDefault(); submit(mode); };
+elements.probe.onclick = () => submit('probe');
 
 window.addEventListener('message', event => {
     const response = event.data;
@@ -48,6 +50,8 @@ window.addEventListener('message', event => {
         if (state && state.binding !== response.state.binding) {
             elements.consent.checked = false;
             elements.text.value = '';
+            elements['probe-result'].textContent = '';
+            elements['probe-check'].textContent = '';
         }
         state = response.state;
         elements.name.textContent = state.name;
@@ -71,6 +75,13 @@ window.addEventListener('message', event => {
         pending = null;
         if (response.accepted) elements.text.value = '';
         notice = response.error || '';
+        if (response.probe) {
+            const result = response.probe;
+            elements['probe-result'].textContent = result.reply || '返回了空文本，请检查酒馆的实际请求和连接。';
+            elements['probe-check'].textContent = `聊天条数：${result.beforeCount} → ${result.afterCount}；正文/身份/所选回复${result.unchanged ? '未变化' : '发生变化！请停止测试并回酒馆核对'}；酒馆草稿${result.draftUnchanged ? '未变化' : '发生变化！'}。`;
+            notice = '静默验证已返回，结果在上方验证区；没有主动保存线上记录。';
+            if (!result.unchanged || !result.draftUnchanged) notice = '验证未通过：检测到存档或草稿变化，请截图反馈；原型没有自动删除或恢复任何记录。';
+        }
         elements.status.textContent = notice || '酒馆生成已结束，请查看聊天记录。';
     } else if (response.type === 'error') { notice = response.message; elements.status.textContent = notice; }
     controls();
